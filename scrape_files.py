@@ -3,10 +3,11 @@
 # @Email:  rijshouray@gmail.com
 # @Filename: scrape_files.py
 # @Last modified by:   Ray
-# @Last modified time: 02-May-2021 17:05:71:717  GMT-0600
+# @Last modified time: 02-May-2021 17:05:86:860  GMT-0600
 # @License: MIT License
 
 import _references._accessories as _accessories
+import bs4
 from selenium.webdriver.chrome.options import Options
 
 _ = """
@@ -16,13 +17,22 @@ _ = """
 """
 chrome_options = Options()
 chrome_options.add_argument("--start-maximized")
-chrome_options.add_argument("--kiosk")
+# chrome_options.add_argument("--kiosk")
 
 _ = """
 #######################################################################################################################
 ################################################   LOCAL DEFINITIONS   ################################################
 #######################################################################################################################
 """
+URL_by_county = 'https://www.library.ucsb.edu/geospatial/airphotos/california-aerial-photography-county'
+
+
+_ = """
+#######################################################################################################################
+#####################################################   SETUP   #######################################################
+#######################################################################################################################
+"""
+driver = _accessories.init_driver(chrome_options)
 
 
 _ = """
@@ -30,6 +40,14 @@ _ = """
 #################################################   INITIAL SCRAPE   ##################################################
 #######################################################################################################################
 """
+_accessories.load(driver, URL_by_county, val_xpath='//*[@id="content"]/article/div/h3')
+
+counties_obj = driver.find_element_by_xpath('//*[@id="content"]/article/div/ul').find_elements_by_tag_name('li')
+county_names = {elem.find_element_by_tag_name('a').text: elem.find_element_by_tag_name('a').get_attribute('href')
+                for elem in counties_obj}
+
+
+soup = bs4.BeautifulSoup(driver.page_source)
 
 
 _ = """
@@ -37,6 +55,8 @@ _ = """
 #################################################   DEEPER SCRAPE   ###################################################
 #######################################################################################################################
 """
+
+driver.quit()
 
 
 # EOF

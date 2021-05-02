@@ -3,7 +3,7 @@
 # @Email:  rijshouray@gmail.com
 # @Filename: _accessories.py
 # @Last modified by:   Ray
-# @Last modified time: 02-May-2021 17:05:84:841  GMT-0600
+# @Last modified time: 02-May-2021 17:05:94:947  GMT-0600
 # @License: [Private IP]
 
 import time
@@ -49,20 +49,16 @@ def util_validate(driver, xpath, TIMEOUT_THRESH=TIMEOUT_THRESH):
         print('Page timed out after ' + str(TIMEOUT_THRESH) + ' seconds during validation.')
 
 
-def load(driver, url, val_xpath=None, validate=False, TIMEOUT_THRESH=TIMEOUT_THRESH, GRACE=GRACE):
-    if(val_xpath is not None):
-        validate = True
+def load(driver, url, val_xpath=None, TIMEOUT_THRESH=TIMEOUT_THRESH, GRACE=GRACE):
     driver.get(url)
-    if(validate):
+    if(val_xpath is not None):
         util_validate(driver, val_xpath)
     time.sleep(GRACE)
 
 
-def click(driver, xpath=None, validate=False, val_xpath=None, TIMEOUT_THRESH=TIMEOUT_THRESH):
-    if(val_xpath is not None):
-        validate = True
+def click(driver, xpath=None, val_xpath=None, TIMEOUT_THRESH=TIMEOUT_THRESH):
     driver.find_element_by_xpath(xpath).click()
-    if(validate):
+    if(val_xpath is not None):
         util_validate(driver, val_xpath)
 
 
@@ -73,6 +69,11 @@ def type(driver, content, xpath, GRACE=GRACE):
     time.sleep(GRACE)
 
 
-def init_driver(options):
+def init_driver(options=None):
     driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
     return driver
+
+
+# EOF
+
+# EOF
