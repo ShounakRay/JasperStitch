@@ -3,11 +3,13 @@
 # @Email:  rijshouray@gmail.com
 # @Filename: scrape_files.py
 # @Last modified by:   Ray
-# @Last modified time: 02-May-2021 17:05:18:186  GMT-0600
+# @Last modified time: 02-May-2021 18:05:64:644  GMT-0600
 # @License: MIT License
+
 
 import _references._accessories as _accessories
 import bs4
+import numpy as np
 import pandas as pd
 from selenium.webdriver.chrome.options import Options
 
@@ -18,7 +20,7 @@ _ = """
 """
 # 1. The "Index" link for each county is http://mil.library.ucsb.edu/ap_indexes/ followed by the flight idea
 #    in all lowercase and without non-alphanumeric characters
-# 2. All scale options are
+# 2. All cells in the "Scale" column for each county is always formatted as "1:[whatever number]"
 
 
 _ = """
@@ -28,9 +30,6 @@ _ = """
 """
 URL_all_counties = 'https://www.library.ucsb.edu/geospatial/airphotos/california-aerial-photography-county'
 
-chrome_options = Options()
-chrome_options.add_argument("--start-maximized")
-# chrome_options.add_argument("--kiosk")
 
 _ = """
 #######################################################################################################################
@@ -44,6 +43,9 @@ _ = """
 #####################################################   SETUP   #######################################################
 #######################################################################################################################
 """
+chrome_options = Options()
+chrome_options.add_argument("--start-maximized")
+# chrome_options.add_argument("--kiosk")
 driver = _accessories.init_driver(chrome_options)
 
 
@@ -58,23 +60,35 @@ counties_obj = driver.find_element_by_xpath('//*[@id="content"]/article/div/ul')
 county_names = {elem.find_element_by_tag_name('a').text: elem.find_element_by_tag_name('a').get_attribute('href')
                 for elem in counties_obj}
 
-data_by_county = {}
+all_data = []
 for county, county_url in county_names.items():
-    _accessories.open_tab(driver)
-    _accessories.load(driver, county_url, val_xpath='/html/body/div[5]/table')
+    try:
+        print(f'Processing "{county}" at "{county_url}"...')
+        _accessories.open_tab(driver)
+        _accessories.load(driver, county_url, val_xpath=None)
 
-    table_on_page = pd.read_html(driver.find_element_by_xpath('/html/body/div[5]/table').get_attribute('outerHTML'))[0]
-    table_on_page.drop([0, 1], axis=0, inplace=True)
-    table_on_page.columns = ['begin_date', 'flight_id', 'scale', 'index_url', 'frame_status']
+        table_on_page = pd.read_html(driver.find_element_by_xpath(
+            '/html/body/div[5]/table').get_attribute('outerHTML'))[0]
+        table_on_page.drop([0, 1], axis=0, inplace=True)
+        table_on_page.columns = ['begin_date', 'flight_id', 'scale', 'index_url', 'frame_status']
 
-    table_on_page['index_url'] = table_on_page['flight_id'].apply(lambda x:
-                                                                  'http://mil.library.ucsb.edu/ap_indexes/' + x.replace('-', '').lower())
-    table_on_page['county_name'] = county
-    table_on_page['county_url'] = county_url
-    data_by_county[county] = table_on_page.infer_objects()
+        table_on_page['index_url'] = table_on_page['flight_id'].apply(lambda x:
+                                                                      'http://mil.library.ucsb.edu/ap_indexes/' +
+                                                                      x.replace('-', '').lower())
+        table_on_page['scale'] = [[v.replace(',', '') for v in found if v != '']
+                                  for found in table_on_page['scale'].str.split('1:').replace(np.nan, '')]
+        table_on_page['reference_image_url'] = driver.find_element_by_xpath(
+            '/html/body/div[4]/table/tbody/tr/td[2]/img').get_attribute('src')
+        table_on_page['county_name'] = county
+        table_on_page['county_url'] = county_url
 
+        all_data.append(table_on_page.infer_objects())
+        _accessories.close_tab(driver)
+    except Exception as e:
+        print(f'Something went wrong! {e[:100]}\n Proceeding...')
 
-soup = bs4.BeautifulSoup(driver.page_source)
+print("Completed all initial scraping...")
+all_data = pd.concat(all_data).reset_index(drop=True).infer_objects()
 
 
 _ = """
