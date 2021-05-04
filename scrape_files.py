@@ -3,7 +3,7 @@
 # @Email:  rijshouray@gmail.com
 # @Filename: scrape_files.py
 # @Last modified by:   Ray
-# @Last modified time: 03-May-2021 23:05:66:668  GMT-0600
+# @Last modified time: 04-May-2021 00:05:56:562  GMT-0600
 # @License: MIT License
 
 
@@ -142,7 +142,6 @@ _accessories._print('Scraped county surface-level data and saved to file.')
 
 surface_level_data = _accessories.retrieve_local_data_file('Data/surface_level.csv')
 surface_level_data['scale'] = [ast.literal_eval(val) for val in surface_level_data['scale']]
-surface_level_data['date'] = pd.to_datetime(surface_level_data['date'], errors='coerce', utc=True)
 
 _ = """
 #######################################################################################################################
@@ -155,12 +154,13 @@ _ = """
 #######################################   MERGED SCRAPED AND DOWNLOADED DATA   ########################################
 #######################################################################################################################
 """
-raw_df.columns
-surface_level_data.columns
-surface_level_data['scale'] = surface_level_data['scale'].apply(lambda x: x[0] if len(x) == 1 else x)
-surface_level_data['scale'] = surface_level_data['scale'].apply(lambda x: x if type(x) == int else None)
 
-pd.merge(raw_df, surface_level_data, how='inner', on=['date', 'flight_id', 'scale'])
+surface_level_data['scale'] = surface_level_data['scale'].apply(lambda x: x[0] if len(x) == 1 else x)
+surface_level_data = surface_level_data[surface_level_data['scale'].apply(lambda x: str(x).isdigit())].infer_objects()
+surface_level_data['date'] = pd.to_datetime(surface_level_data['date'], errors='coerce', utc=True)
+surface_level_data.dtypes
+
+pd.merge(raw_df, surface_level_data, how='outer', on=['date', 'flight_id'])
 
 driver.quit()
 
