@@ -1,2 +1,2 @@
 # JasperStitch
-Remote for Jasper Ridge file aggregation, georeferencing, and stitching
+Remote for Stanford DAMS; Jasper Ridge file aggregation, georeferencing, and mosaic stitching.
