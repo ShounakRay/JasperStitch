@@ -3,7 +3,7 @@
 # @Email:  rijshouray@gmail.com
 # @Filename: scrape_files.py
 # @Last modified by:   Ray
-# @Last modified time: 02-May-2021 20:05:45:453  GMT-0600
+# @Last modified time: 03-May-2021 23:05:86:862  GMT-0600
 # @License: MIT License
 
 
@@ -44,7 +44,22 @@ _accessories._print('Local functions defined.')
 
 _ = """
 #######################################################################################################################
-#####################################################   SETUP   #######################################################
+###############################################  CENTROID LOCATIONS   #################################################
+#######################################################################################################################
+"""
+tiles_df = pd.read_csv('Data/All_Flights_Merge_4tiles.csv').infer_objects()
+tiles_df.columns = ['long', 'lat', 'FID_delete', 'object_id', 'held', 'flight_id', 'date',
+                    'frame', 'scale', 'latlong_delete', 'scan', 'roll_delete', 'nitrate_delete',
+                    'cut_frame_delete', 'print_delete']
+tiles_df = tiles_df[[c for c in tiles_df.columns if '_delete' not in c]]
+tiles_df['scan'] = tiles_df['scan'].str.extract('(http:\S+.tif)')
+
+
+raw_df = pd.read_csv('Data/All_Flights_Merge.csv').infer_objects()
+
+_ = """
+#######################################################################################################################
+#################################################  SCRAPING SETUP   ###################################################
 #######################################################################################################################
 """
 chrome_options = Options()
