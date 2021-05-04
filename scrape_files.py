@@ -3,9 +3,11 @@
 # @Email:  rijshouray@gmail.com
 # @Filename: scrape_files.py
 # @Last modified by:   Ray
-# @Last modified time: 03-May-2021 23:05:86:862  GMT-0600
+# @Last modified time: 03-May-2021 23:05:66:668  GMT-0600
 # @License: MIT License
 
+
+import ast
 
 import _references._accessories as _accessories
 import numpy as np
@@ -48,14 +50,21 @@ _ = """
 #######################################################################################################################
 """
 tiles_df = pd.read_csv('Data/All_Flights_Merge_4tiles.csv').infer_objects()
-tiles_df.columns = ['long', 'lat', 'FID_delete', 'object_id', 'held', 'flight_id', 'date',
+tiles_df.columns = ['long', 'lat', 'FID_delete', 'object_id', 'held_delete', 'flight_id', 'date',
                     'frame', 'scale', 'latlong_delete', 'scan', 'roll_delete', 'nitrate_delete',
                     'cut_frame_delete', 'print_delete']
 tiles_df = tiles_df[[c for c in tiles_df.columns if '_delete' not in c]]
 tiles_df['scan'] = tiles_df['scan'].str.extract('(http:\S+.tif)')
-
+tiles_df['date'] = pd.to_datetime(tiles_df['date'])
 
 raw_df = pd.read_csv('Data/All_Flights_Merge.csv').infer_objects()
+raw_df.columns = ['long', 'lat', 'FID_delete', 'object_id', 'held_delete', 'flight_id', 'date',
+                  'frame', 'scale', 'latlong_delete', 'scan', 'roll_delete', 'nitrate_delete',
+                  'cut_frame_delete', 'print_delete']
+raw_df = raw_df[[c for c in raw_df.columns if '_delete' not in c]]
+raw_df['scan'] = raw_df['scan'].str.extract('(http:\S+.tif)')
+raw_df['date'] = pd.to_datetime(raw_df['date'])
+
 
 _ = """
 #######################################################################################################################
@@ -103,7 +112,8 @@ for county, county_url in county_names.items():
 
         # Minor data cleaning
         table.drop([0, 1], axis=0, inplace=True)
-        table.columns = ['begin_date', 'flight_id', 'scale', 'index_url', 'frame_status']
+        table.columns = ['date', 'flight_id', 'scale', 'index_url', 'frame_status']
+        table['date'] = pd.to_datetime(table['date'], errors='coerce')
 
         # Feature addition/formatting
         table['index_url'] = table['flight_id'].apply(lambda x:
@@ -124,19 +134,33 @@ for county, county_url in county_names.items():
         _accessories._print(f'Something went wrong! {e[:100]}\n Proceeding...', color='LIGHTRED_EX')
 
 # Concatenate all the data and save it
-all_data = pd.concat(all_data).reset_index(drop=True).infer_objects()
+surface_level_data = pd.concat(all_data).reset_index(drop=True).infer_objects()
 _accessories.auto_make_path('Data/')
-_accessories.save_local_data_file(all_data, 'Data/surface_level.csv')
+_accessories.save_local_data_file(surface_level_data, 'Data/surface_level.csv')
 
 _accessories._print('Scraped county surface-level data and saved to file.')
 
-# data = _accessories.retrieve_local_data_file('Data/surface_level.csv')
+surface_level_data = _accessories.retrieve_local_data_file('Data/surface_level.csv')
+surface_level_data['scale'] = [ast.literal_eval(val) for val in surface_level_data['scale']]
+surface_level_data['date'] = pd.to_datetime(surface_level_data['date'], errors='coerce', utc=True)
 
 _ = """
 #######################################################################################################################
 #################################################   DEEPER SCRAPE   ###################################################
 #######################################################################################################################
 """
+
+_ = """
+#######################################################################################################################
+#######################################   MERGED SCRAPED AND DOWNLOADED DATA   ########################################
+#######################################################################################################################
+"""
+raw_df.columns
+surface_level_data.columns
+surface_level_data['scale'] = surface_level_data['scale'].apply(lambda x: x[0] if len(x) == 1 else x)
+surface_level_data['scale'] = surface_level_data['scale'].apply(lambda x: x if type(x) == int else None)
+
+pd.merge(raw_df, surface_level_data, how='inner', on=['date', 'flight_id', 'scale'])
 
 driver.quit()
 
