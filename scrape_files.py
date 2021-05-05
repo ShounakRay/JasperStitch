@@ -3,15 +3,19 @@
 # @Email:  rijshouray@gmail.com
 # @Filename: scrape_files.py
 # @Last modified by:   Ray
-# @Last modified time: 04-May-2021 00:05:56:562  GMT-0600
+# @Last modified time: 04-May-2021 22:05:83:831  GMT-0600
 # @License: MIT License
 
 
 import ast
 
 import _references._accessories as _accessories
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
 from selenium.webdriver.chrome.options import Options
 
 _accessories._print('Dependencies imported.')
@@ -64,6 +68,17 @@ raw_df.columns = ['long', 'lat', 'FID_delete', 'object_id', 'held_delete', 'flig
 raw_df = raw_df[[c for c in raw_df.columns if '_delete' not in c]]
 raw_df['scan'] = raw_df['scan'].str.extract('(http:\S+.tif)')
 raw_df['date'] = pd.to_datetime(raw_df['date'])
+
+_temp = raw_df[(raw_df['long'] < -110) & (raw_df['lat'] > 31)].reset_index(drop=True)
+plt.figure(figsize=(40, 40))
+figure = sns.scatterplot(data=_temp, x='long', y='lat', hue='flight_id', legend=False)
+figure.set_title('Latitude VS. Longitude for Selective Flight Paths')
+figure.get_figure().savefig('Images/trimmed_flight_paths.png', dpi=144, bbox_inches='tight')
+
+_temp = raw_df[(raw_df['long'] < -110) & (raw_df['lat'] > 31)].reset_index(drop=True)
+date_info = _temp['date'].apply(lambda x: x.date().year) - min(_temp['date']).date().year
+ax = Axes3D(plt.figure())
+ax.plot_trisurf(_temp['long'], _temp['lat'], date_info)
 
 
 _ = """
