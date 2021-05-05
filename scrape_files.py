@@ -3,19 +3,22 @@
 # @Email:  rijshouray@gmail.com
 # @Filename: scrape_files.py
 # @Last modified by:   Ray
-# @Last modified time: 04-May-2021 22:05:83:831  GMT-0600
+# @Last modified time: 05-May-2021 00:05:17:174  GMT-0600
 # @License: MIT License
 
 
 import ast
 
-import _references._accessories as _accessories
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
+
+if __name__ == '__main__':
+    import matplotlib
+    # matplotlib.use('Qt5Agg')
+    import matplotlib.pyplot as plt
+    import _references._accessories as _accessories
+    import seaborn as sns
+
 from selenium.webdriver.chrome.options import Options
 
 _accessories._print('Dependencies imported.')
@@ -53,13 +56,13 @@ _ = """
 ###############################################  CENTROID LOCATIONS   #################################################
 #######################################################################################################################
 """
-tiles_df = pd.read_csv('Data/All_Flights_Merge_4tiles.csv').infer_objects()
-tiles_df.columns = ['long', 'lat', 'FID_delete', 'object_id', 'held_delete', 'flight_id', 'date',
-                    'frame', 'scale', 'latlong_delete', 'scan', 'roll_delete', 'nitrate_delete',
-                    'cut_frame_delete', 'print_delete']
-tiles_df = tiles_df[[c for c in tiles_df.columns if '_delete' not in c]]
-tiles_df['scan'] = tiles_df['scan'].str.extract('(http:\S+.tif)')
-tiles_df['date'] = pd.to_datetime(tiles_df['date'])
+# tiles_df = pd.read_csv('Data/All_Flights_Merge_4tiles.csv').infer_objects()
+# tiles_df.columns = ['long', 'lat', 'FID_delete', 'object_id', 'held_delete', 'flight_id', 'date',
+#                     'frame', 'scale', 'latlong_delete', 'scan', 'roll_delete', 'nitrate_delete',
+#                     'cut_frame_delete', 'print_delete']
+# tiles_df = tiles_df[[c for c in tiles_df.columns if '_delete' not in c]]
+# tiles_df['scan'] = tiles_df['scan'].str.extract('(http:\S+.tif)')
+# tiles_df['date'] = pd.to_datetime(tiles_df['date'])
 
 raw_df = pd.read_csv('Data/All_Flights_Merge.csv').infer_objects()
 raw_df.columns = ['long', 'lat', 'FID_delete', 'object_id', 'held_delete', 'flight_id', 'date',
@@ -69,16 +72,15 @@ raw_df = raw_df[[c for c in raw_df.columns if '_delete' not in c]]
 raw_df['scan'] = raw_df['scan'].str.extract('(http:\S+.tif)')
 raw_df['date'] = pd.to_datetime(raw_df['date'])
 
-_temp = raw_df[(raw_df['long'] < -110) & (raw_df['lat'] > 31)].reset_index(drop=True)
-plt.figure(figsize=(40, 40))
-figure = sns.scatterplot(data=_temp, x='long', y='lat', hue='flight_id', legend=False)
-figure.set_title('Latitude VS. Longitude for Selective Flight Paths')
-figure.get_figure().savefig('Images/trimmed_flight_paths.png', dpi=144, bbox_inches='tight')
+_temp = raw_df[(raw_df['long'] < -114) & (raw_df['lat'] < 42.5)].reset_index(drop=True)
+_temp['date_delta'] = _temp['date'].apply(lambda x: x.date().year) - min(_temp['date']).date().year
+_temp['date_delta'] = _temp['date_delta']**40 / max(_temp['date_delta']**40) * 100000
 
-_temp = raw_df[(raw_df['long'] < -110) & (raw_df['lat'] > 31)].reset_index(drop=True)
-date_info = _temp['date'].apply(lambda x: x.date().year) - min(_temp['date']).date().year
-ax = Axes3D(plt.figure())
-ax.plot_trisurf(_temp['long'], _temp['lat'], date_info)
+# Latitude VS. Longitude for Different Flight Paths
+plt.figure(figsize=(40, 40))
+figure = sns.scatterplot(data=_temp, x='long', y='lat', hue='flight_id', legend=False, size='date_delta')
+figure.set_title('Latitude VS. Longitude for Selective Flight Paths')
+figure.get_figure().savefig('Images/trimmed_flight_paths_cali.png', dpi=178, bbox_inches='tight', facecolor='white')
 
 
 _ = """
@@ -173,9 +175,14 @@ _ = """
 surface_level_data['scale'] = surface_level_data['scale'].apply(lambda x: x[0] if len(x) == 1 else x)
 surface_level_data = surface_level_data[surface_level_data['scale'].apply(lambda x: str(x).isdigit())].infer_objects()
 surface_level_data['date'] = pd.to_datetime(surface_level_data['date'], errors='coerce', utc=True)
+surface_level_data['flight_id'] = surface_level_data['flight_id'].str.replace('-', '_')
+
+raw_df.dtypes
 surface_level_data.dtypes
 
-pd.merge(raw_df, surface_level_data, how='outer', on=['date', 'flight_id'])
+set([c for c in raw_df['flight_id'].values if 'C_10800X' in c])
+
+pd.merge(raw_df, surface_level_data, how='inner', on=['flight_id'])
 
 driver.quit()
 
