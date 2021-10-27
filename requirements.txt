@@ -30,7 +30,7 @@ crayons==0.4.0
 cryptography==3.4.6
 cufflinks==0.17.3
 cycler==0.10.0
-dask==2021.3.0
+dask==2021.10.0
 data==0.4
 decorator==4.4.2
 defusedxml==0.6.0
